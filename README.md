@@ -1,4 +1,4 @@
-# AI Ticket Resolver - Infosys Virtual Internship Project
+# AI Ticket Resolver 
 
 ## Overview
 AI Ticket Resolver is a web-based system that classifies support tickets and provides suggested resolutions using **rule-based AI** and **online web search**.  
@@ -43,5 +43,6 @@ Input: User enters a ticket title and description.
 Processing: Backend uses rule-based logic to determine category, priority, and base resolution.
 
 Web Search: Integrates DuckDuckGo search results to provide additional guidance.
+
 
 Output: Frontend displays category, priority (badge), suggested resolution (with clickable links), and timestamp.
