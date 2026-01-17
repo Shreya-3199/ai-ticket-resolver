@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Ticket Resolution System</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --bg: #f3f4f6;
+            --card: #ffffff;
+            --text: #1f2937;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            background: var(--card);
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 550px;
+        }
+
+        h1 { text-align: center; color: var(--primary); margin-bottom: 1.5rem; }
+
+        label { display: block; margin-bottom: 0.5rem; font-weight: 600; }
+        
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 1rem;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-family: inherit;
+        }
+
+        button {
+            width: 100%;
+            background-color: var(--primary);
+            color: white;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        button:hover { background-color: #1d4ed8; }
+
+        /* Result Box Styling */
+        .result-box {
+            margin-top: 2rem;
+            padding: 1.5rem;
+            background: #f8fafc;
+            border-left: 5px solid var(--primary);
+            border-radius: 4px;
+            display: none; 
+        }
+
+        .result-item { margin-bottom: 1rem; }
+        .label { font-weight: bold; font-size: 0.85rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;}
+        
+        .value { 
+            font-size: 1rem; 
+            line-height: 1.6;
+        }
+
+        /* Styling for the Clickable Links */
+        .value a {
+            color: #2563eb;
+            text-decoration: none;
+            font-weight: 500;
+            display: block; 
+            margin-top: 5px;
+        }
+        .value a:hover { text-decoration: underline; }
+
+        /* Timestamp */
+        .timestamp { 
+            margin-top: 15px; 
+            font-size: 0.75rem; 
+            color: #94a3b8; 
+            text-align: right; 
+            border-top: 1px solid #e2e8f0; 
+            padding-top: 5px;
+        }
+
+        /* Priority Badge Colors */
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: bold;
+            color: white;
+        }
+        .p-Critical { background-color: #dc2626; }
+        .p-High { background-color: #ea580c; }
+        .p-Medium { background-color: #ca8a04; }
+        .p-Low { background-color: #16a34a; }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>🤖 AI Ticket Resolver</h1>
+        
+        <label for="title">Ticket Title</label>
+        <input type="text" id="title" placeholder="e.g., Python indentation error">
+
+        <label for="desc">Description</label>
+        <textarea id="desc" rows="4" placeholder="Describe the issue..."></textarea>
+
+        <button onclick="analyzeTicket()" id="btn-analyze">Analyze Ticket</button>
+
+        <div id="result" class="result-box">
+            <div class="result-item">
+                <div class="label">CATEGORY</div>
+                <div class="value" id="res-category"></div>
+            </div>
+            <div class="result-item">
+                <div class="label">PRIORITY</div>
+                <div class="value">
+                    <span id="res-priority" class="badge"></span>
+                </div>
+            </div>
+            <div class="result-item">
+                <div class="label">SUGGESTED RESOLUTION</div>
+                <div class="value" id="res-resolution"></div>
+            </div>
+            <div class="timestamp" id="res-time"></div>
+        </div>
+    </div>
+
+    <script>
+        async function analyzeTicket() {
+            const title = document.getElementById('title').value;
+            const description = document.getElementById('desc').value;
+            const resultBox = document.getElementById('result');
+            const btn = document.getElementById('btn-analyze');
+
+            if (!title || !description) {
+                alert("Please fill in both fields.");
+                return;
+            }
+
+            // 1. Show Loading State
+            btn.innerText = "Searching Knowledge Base...";
+            btn.disabled = true;
+            resultBox.style.display = 'none';
+
+            try {
+                // 2. Call Python Backend
+                const response = await fetch('http://127.0.0.1:8000/analyze-ticket', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title: title, description: description })
+                });
+
+                if (!response.ok) throw new Error('Network response was not ok');
+
+                const data = await response.json();
+
+                // 3. Update UI
+                document.getElementById('res-category').innerText = data.category;
+                document.getElementById('res-time').innerText = "Processed at: " + data.timestamp;
+                
+                const prioritySpan = document.getElementById('res-priority');
+                prioritySpan.innerText = data.priority;
+                prioritySpan.className = 'badge p-' + data.priority;
+
+                // 4. Format Links (Critical Logic)
+                let rawResolution = data.resolution;
+                
+                // Convert python newlines to HTML breaks
+                let formattedHtml = rawResolution.replace(/\n/g, "<br>");
+
+                // Regex to find URLs and turn them into <a> tags
+                const urlRegex = /(https?:\/\/[^\s]+)/g;
+                formattedHtml = formattedHtml.replace(urlRegex, function(url) {
+                    return `<a href="${url}" target="_blank">🔗 Click to Open Resource ↗</a>`;
+                });
+
+                document.getElementById('res-resolution').innerHTML = formattedHtml;
+
+                // 5. Show Result
+                resultBox.style.display = 'block';
+
+            } catch (error) {
+                console.error('Error:', error);
+                alert("Failed to connect to backend. Is main.py running?");
+            } finally {
+                // Reset Button
+                btn.innerText = "Analyze Ticket";
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
