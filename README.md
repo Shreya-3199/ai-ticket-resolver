@@ -46,3 +46,4 @@ Web Search: Integrates DuckDuckGo search results to provide additional guidance.
 
 
 Output: Frontend displays category, priority (badge), suggested resolution (with clickable links), and timestamp.
+
